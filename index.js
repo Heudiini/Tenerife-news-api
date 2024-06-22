@@ -105,10 +105,12 @@ const fetchArticles = async () => {
       console.error(
         `Error fetching ${newspaper.name} articles: ${error.message}`
       );
+      // Continue to the next newspaper even if fetching fails
     }
   }
 };
 
+// Start fetching articles when server starts
 fetchArticles();
 
 app.get("/", (req, res) => {
