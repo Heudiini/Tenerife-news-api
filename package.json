@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "concurrently \"node index.js\" \"iisexpress ./index.html\""
+    "start": "node index.js"
   },
   "author": "heidi morsky",
   "license": "ISC",

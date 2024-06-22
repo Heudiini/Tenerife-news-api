@@ -88,9 +88,9 @@ const fetchArticles = async () => {
 
         // Check if description exists and is not empty
         if (!description) {
-          console.log(
+          /*  console.log(
             `Skipping article '${title}' from ${newspaper.name} due to missing description.`
-          );
+          ); */
           return; // Skip this iteration
         }
 
