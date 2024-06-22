@@ -1,69 +1,59 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <!---- <link rel="stylesheet" href="style.css" />-->
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-    <script
-      src="https://code.jquery.com/jquery-3.6.0.min.js"
-      integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4="
-      crossorigin="anonymous"
-    ></script>
-    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
-    <!---- <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>-->
-    <title>My Api in real world</title>
+    <title>My Climate Change News API</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
- 
-      <header class="header">
-        <h1>Climate based topics From All Over The Globe</h1>
-        <div class="demo">Sourced by my own API!😊
+    <header class="header">
+      <h1>Climate Change News From Various Sources</h1>
+      <div class="demo">Powered by My Custom API 😊</div>
+    </header>
 
-        </div>
-        <main> 
-
-        </header>
-      <!--  for showing js data -->
-      <div id="container"></div>
-
-      <script>
-        const url = "https://heudiinisapi.herokuapp.com/news";
-
-        axios.get(url).then(function (response) {
-          console.log(response);
-
-          var x = response.data;
-
-          var allNews = x
-            .map(function (item) {
-              console.log(item);
-
-              for (var topic in item)
-                return (
-                  "<br> <br><h4>" +
-                  item[topic] +
-                  "</h4>  " +
-                  '<a href="' +
-                  item.url +
-                  '">News link on: ' +
-                  item.source +
-                  "</a>"
-                );
-            })
-            .join("<br> ");
-          document.getElementById("container").innerHTML = allNews;
-        });
-      </script>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <main>
+      <div id="news-container"></div>
     </main>
+
     <footer>
-      © 2022 Coded by <a href="https://heudiinis.netlify.app/">Heudiini </a><br /><a
-        href="https://github.com/Heudiini/rapid-api-project"
-      >
-        Source Code in Github</a
+      © 2022 Coded by <a href="https://heudiinis.netlify.app/">Heudiini</a
+      ><br />
+      <a href="https://github.com/Heudiini/rapid-api-project"
+        >Source Code on Github</a
       >
     </footer>
+
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script>
+      const apiUrl = "http://localhost:8000/news";
+
+      axios
+        .get(apiUrl)
+        .then(function (response) {
+          const newsData = response.data;
+          let newsHTML = "";
+
+          newsData.forEach(function (item) {
+            // Ensure item.title and item.description are defined and not empty
+            const title = item.title || "No Title Available";
+            const description = item.description || "No Description Available";
+
+            newsHTML += `
+            <div class="news-item">
+              <h4>${title}</h4>
+              <p>${description}</p>
+              <a href="${item.url}" target="_blank">Read More</a>
+            </div>`;
+          });
+
+          document.getElementById("news-container").innerHTML = newsHTML;
+        })
+        .catch(function (error) {
+          console.error("Error fetching news:", error);
+          document.getElementById("news-container").innerHTML =
+            "Error fetching news. Please try again later.";
+        });
+    </script>
   </body>
 </html>

@@ -3,34 +3,35 @@ const express = require("express");
 const axios = require("axios");
 const cheerio = require("cheerio");
 const app = express();
-//this was needed for unblocking the url get
-let cors = require("cors");
+const cors = require("cors");
+
 app.use(cors());
 
 const newspapers = [
   {
     name: "cityam",
-    address: "https://www.cityam.com/london-must-become-a-world-leader-on-climate-change-action/",
+    address:
+      "https://www.cityam.com/london-must-become-a-world-leader-on-climate-change-action/",
     base: "",
   },
   {
     name: "thetimes",
-    address: "https://www.thetimes.co.uk/environment/climate-change",
+    address: "https://www.thetimes.co.uk/environment/",
     base: "",
   },
   {
     name: "guardian",
-    address: "https://www.theguardian.com/environment/climate-crisis",
+    address: "https://www.theguardian.com/environment/",
     base: "",
   },
   {
     name: "telegraph",
-    address: "https://www.telegraph.co.uk/climate-change",
+    address: "https://www.telegraph.co.uk",
     base: "https://www.telegraph.co.uk",
   },
   {
     name: "nyt",
-    address: "https://www.nytimes.com/international/section/climate",
+    address: "https://www.nytimes.com/international/section",
     base: "",
   },
   {
@@ -40,13 +41,8 @@ const newspapers = [
   },
   {
     name: "smh",
-    address: "https://www.smh.com.au/environment/climate-change",
+    address: "https://www.smh.com.au/environment",
     base: "https://www.smh.com.au",
-  },
-  {
-    name: "un",
-    address: "https://www.un.org/climatechange",
-    base: "",
   },
   {
     name: "bbc",
@@ -55,45 +51,70 @@ const newspapers = [
   },
   {
     name: "es",
-    address: "https://www.standard.co.uk/topic/climate-change",
+    address: "https://www.standard.co.uk/topic",
     base: "https://www.standard.co.uk",
   },
   {
     name: "sun",
-    address: "https://www.thesun.co.uk/topic/climate-change-environment/",
+    address: "https://www.thesun.co.uk/topic",
     base: "",
   },
   {
     name: "dm",
-    address: "https://www.dailymail.co.uk/news/climate_change_global_warming/index.html",
+    address:
+      "https://www.dailymail.co.uk/news/climate_change_global_warming/index.html",
     base: "",
   },
   {
     name: "nyp",
-    address: "https://nypost.com/tag/climate-change/",
+    address: "https://nypost.com/tag",
     base: "",
   },
 ];
 
 const articles = [];
 
-newspapers.forEach((newspaper) => {
-  axios.get(newspaper.address).then((response) => {
-    const html = response.data;
-    const $ = cheerio.load(html);
+const fetchArticles = async () => {
+  for (const newspaper of newspapers) {
+    try {
+      const response = await axios.get(newspaper.address);
+      const html = response.data;
+      const $ = cheerio.load(html);
 
-    $('a:contains("climate")', html).each(function () {
-      const title = $(this).text();
-      const url = $(this).attr("href");
+      $('a:contains("climate")', html).each(function () {
+        const title = $(this).text().trim();
+        const url = $(this).attr("href");
+        let description = $(this).find("p").first().text().trim(); // Adjust selector based on actual HTML structure
 
-      articles.push({
-        title,
-        url: newspaper.base + url,
-        source: newspaper.name,
+        // Check if description exists and is not empty
+        if (!description) {
+          console.log(
+            `Skipping article '${title}' from ${newspaper.name} due to missing description.`
+          );
+          return; // Skip this iteration
+        }
+
+        articles.push({
+          title,
+          url: newspaper.base + url,
+          description,
+          source: newspaper.name,
+        });
+
+        // Limit articles to 10 (adjust as needed)
+        if (articles.length >= 10) {
+          return false; // Exit each loop once we reach the desired number of articles
+        }
       });
-    });
-  });
-});
+    } catch (error) {
+      console.error(
+        `Error fetching ${newspaper.name} articles: ${error.message}`
+      );
+    }
+  }
+};
+
+fetchArticles();
 
 app.get("/", (req, res) => {
   res.json("Welcome to my Climate Change News API");
@@ -105,30 +126,46 @@ app.get("/news", (req, res) => {
 
 app.get("/news/:newspaperId", (req, res) => {
   const newspaperId = req.params.newspaperId;
-
-  const newspaperAddress = newspapers.filter((newspaper) => newspaper.name == newspaperId)[0]
-    .address;
-  const newspaperBase = newspapers.filter((newspaper) => newspaper.name == newspaperId)[0].base;
+  const newspaper = newspapers.find((np) => np.name === newspaperId);
 
   axios
-    .get(newspaperAddress)
+    .get(newspaper.address)
     .then((response) => {
       const html = response.data;
       const $ = cheerio.load(html);
       const specificArticles = [];
 
       $('a:contains("climate")', html).each(function () {
-        const title = $(this).text();
+        const title = $(this).text().trim();
         const url = $(this).attr("href");
+        let description = $(this).find("p").first().text().trim(); // Adjust selector based on actual HTML structure
+
+        // Check if description exists and is not empty
+        if (!description) {
+          console.log(
+            `Skipping article '${title}' from ${newspaper.name} due to missing description.`
+          );
+          return; // Skip this iteration
+        }
+
         specificArticles.push({
           title,
-          url: newspaperBase + url,
+          url: newspaper.base + url,
+          description,
           source: newspaperId,
         });
+
+        // Limit specific articles to 5 (adjust as needed)
+        if (specificArticles.length >= 5) {
+          return false; // Exit each loop once we reach the desired number of articles
+        }
       });
       res.json(specificArticles);
     })
-    .catch((err) => console.log(err));
+    .catch((err) => {
+      console.log(err);
+      res.status(500).json({ error: "Error fetching news" });
+    });
 });
 
-app.listen(PORT, () => console.log(`server running on PORT ${PORT}`));
+app.listen(PORT, () => console.log(`Server running on PORT ${PORT}`));
