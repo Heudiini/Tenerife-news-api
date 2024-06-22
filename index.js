@@ -84,14 +84,10 @@ const fetchArticles = async () => {
       $('a:contains("climate")', html).each(function () {
         const title = $(this).text().trim();
         const url = $(this).attr("href");
-        let description = $(this).find("p").first().text().trim(); // Adjust selector based on actual HTML structure
+        let description = $(this).find("p").first().text().trim();
 
-        // Check if description exists and is not empty
         if (!description) {
-          /*  console.log(
-            `Skipping article '${title}' from ${newspaper.name} due to missing description.`
-          ); */
-          return; // Skip this iteration
+          return;
         }
 
         articles.push({
@@ -101,9 +97,8 @@ const fetchArticles = async () => {
           source: newspaper.name,
         });
 
-        // Limit articles to 10 (adjust as needed)
         if (articles.length >= 10) {
-          return false; // Exit each loop once we reach the desired number of articles
+          return false;
         }
       });
     } catch (error) {
@@ -128,6 +123,10 @@ app.get("/news/:newspaperId", (req, res) => {
   const newspaperId = req.params.newspaperId;
   const newspaper = newspapers.find((np) => np.name === newspaperId);
 
+  if (!newspaper) {
+    return res.status(404).json({ error: "Newspaper not found" });
+  }
+
   axios
     .get(newspaper.address)
     .then((response) => {
@@ -138,14 +137,10 @@ app.get("/news/:newspaperId", (req, res) => {
       $('a:contains("climate")', html).each(function () {
         const title = $(this).text().trim();
         const url = $(this).attr("href");
-        let description = $(this).find("p").first().text().trim(); // Adjust selector based on actual HTML structure
+        let description = $(this).find("p").first().text().trim();
 
-        // Check if description exists and is not empty
         if (!description) {
-          console.log(
-            `Skipping article '${title}' from ${newspaper.name} due to missing description.`
-          );
-          return; // Skip this iteration
+          return;
         }
 
         specificArticles.push({
@@ -155,15 +150,14 @@ app.get("/news/:newspaperId", (req, res) => {
           source: newspaperId,
         });
 
-        // Limit specific articles to 5 (adjust as needed)
         if (specificArticles.length >= 5) {
-          return false; // Exit each loop once we reach the desired number of articles
+          return false;
         }
       });
       res.json(specificArticles);
     })
     .catch((err) => {
-      console.log(err);
+      console.error(`Error fetching ${newspaperId} articles: ${err.message}`);
       res.status(500).json({ error: "Error fetching news" });
     });
 });
