@@ -1,73 +1,37 @@
-const PORT = process.env.PORT || 8000;
 const express = require("express");
 const axios = require("axios");
 const cheerio = require("cheerio");
-const app = express();
 const cors = require("cors");
 
+const app = express();
 app.use(cors());
+
+const PORT = process.env.PORT || 8000;
 
 const newspapers = [
   {
-    name: "cityam",
-    address:
-      "https://www.cityam.com/london-must-become-a-world-leader-on-climate-change-action/",
+    name: "tenerife-news",
+    address: "https://www.tenerifenews.com/",
     base: "",
   },
   {
-    name: "thetimes",
-    address: "https://www.thetimes.co.uk/environment/",
+    name: "abc-es",
+    address: "https://www.abc.es/",
     base: "",
   },
   {
-    name: "guardian",
-    address: "https://www.theguardian.com/environment/",
+    name: "planeta-canario",
+    address: "https://planetacanario.com/",
     base: "",
   },
   {
-    name: "telegraph",
-    address: "https://www.telegraph.co.uk",
-    base: "https://www.telegraph.co.uk",
-  },
-  {
-    name: "nyt",
-    address: "https://www.nytimes.com/international/section",
+    name: "diario-de-avisos",
+    address: "https://diariodeavisos.elespanol.com/",
     base: "",
   },
   {
-    name: "latimes",
-    address: "https://www.latimes.com/environment",
-    base: "",
-  },
-  {
-    name: "smh",
-    address: "https://www.smh.com.au/environment",
-    base: "https://www.smh.com.au",
-  },
-  {
-    name: "bbc",
-    address: "https://www.bbc.co.uk/news/science_and_environment",
-    base: "https://www.bbc.co.uk",
-  },
-  {
-    name: "es",
-    address: "https://www.standard.co.uk/topic",
-    base: "https://www.standard.co.uk",
-  },
-  {
-    name: "sun",
-    address: "https://www.thesun.co.uk/topic",
-    base: "",
-  },
-  {
-    name: "dm",
-    address:
-      "https://www.dailymail.co.uk/news/climate_change_global_warming/index.html",
-    base: "",
-  },
-  {
-    name: "nyp",
-    address: "https://nypost.com/tag",
+    name: "el-dia",
+    address: "https://www.eldia.es/tenerife/",
     base: "",
   },
 ];
@@ -75,93 +39,58 @@ const newspapers = [
 const articles = [];
 
 const fetchArticles = async () => {
-  for (const newspaper of newspapers) {
-    try {
-      const response = await axios.get(newspaper.address);
-      const html = response.data;
-      const $ = cheerio.load(html);
+  articles.length = 0;
 
-      $('a:contains("climate")', html).each(function () {
-        const title = $(this).text().trim();
-        const url = $(this).attr("href");
-        let description = $(this).find("p").first().text().trim();
+  await Promise.all(
+    newspapers.map(async (newspaper) => {
+      try {
+        const response = await axios.get(newspaper.address);
+        const html = response.data;
+        const $ = cheerio.load(html);
 
-        if (!description) {
-          return;
-        }
+        $("a").each(function () {
+          const title = $(this).text().trim();
+          const url = $(this).attr("href");
+          const image = $(this).closest("article").find("img").attr("src");
 
-        articles.push({
-          title,
-          url: newspaper.base + url,
-          description,
-          source: newspaper.name,
+          const excerpt =
+            $(this)
+              .closest("article")
+              .find("p")
+              .text()
+              .trim()
+              .substring(0, 100) + "...";
+
+          if (
+            (title.toLowerCase().includes("tenerife") ||
+              title.toLowerCase().includes("santa cruz de tenerife")) &&
+            !articles.some((article) => article.url === url)
+          ) {
+            articles.push({
+              title: title,
+              url: url.startsWith("http") ? url : newspaper.base + url,
+              excerpt: excerpt || title,
+              image: image && image.startsWith("http") ? image : "",
+              source: newspaper.name,
+            });
+          }
         });
+      } catch (error) {
+        console.log(`Error fetching from ${newspaper.name}:`, error.message);
+      }
+    })
+  );
 
-        if (articles.length >= 10) {
-          return false;
-        }
-      });
-    } catch (error) {
-      console.error(
-        `Error fetching ${newspaper.name} articles: ${error.message}`
-      );
-      // Continue to the next newspaper even if fetching fails
-    }
-  }
+  return articles.slice(0, 50);
 };
 
-// Start fetching articles when server starts
-fetchArticles();
-
 app.get("/", (req, res) => {
-  res.json("Welcome to my Climate Change News API");
+  res.json("Tervetuloa uutis-API:in! Tässä on uutisia Tenerifeltä.");
 });
 
-app.get("/news", (req, res) => {
-  res.json(articles);
+app.get("/news", async (req, res) => {
+  const allArticles = await fetchArticles();
+  res.json(allArticles);
 });
 
-app.get("/news/:newspaperId", (req, res) => {
-  const newspaperId = req.params.newspaperId;
-  const newspaper = newspapers.find((np) => np.name === newspaperId);
-
-  if (!newspaper) {
-    return res.status(404).json({ error: "Newspaper not found" });
-  }
-
-  axios
-    .get(newspaper.address)
-    .then((response) => {
-      const html = response.data;
-      const $ = cheerio.load(html);
-      const specificArticles = [];
-
-      $('a:contains("climate")', html).each(function () {
-        const title = $(this).text().trim();
-        const url = $(this).attr("href");
-        let description = $(this).find("p").first().text().trim();
-
-        if (!description) {
-          return;
-        }
-
-        specificArticles.push({
-          title,
-          url: newspaper.base + url,
-          description,
-          source: newspaperId,
-        });
-
-        if (specificArticles.length >= 5) {
-          return false;
-        }
-      });
-      res.json(specificArticles);
-    })
-    .catch((err) => {
-      console.error(`Error fetching ${newspaperId} articles: ${err.message}`);
-      res.status(500).json({ error: "Error fetching news" });
-    });
-});
-
-app.listen(PORT, () => console.log(`Server running on PORT ${PORT}`));
+app.listen(PORT, () => console.log(`Palvelin käynnissä portissa ${PORT}`));
