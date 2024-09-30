@@ -6,8 +6,6 @@ const cors = require("cors");
 const app = express();
 app.use(cors());
 
-const PORT = process.env.PORT || 8000;
-
 const newspapers = [
   {
     name: "tenerife-news",
@@ -93,4 +91,4 @@ app.get("/news", async (req, res) => {
   res.json(allArticles);
 });
 
-app.listen(PORT, () => console.log(`Palvelin käynnissä portissa ${PORT}`));
+module.exports = app;
