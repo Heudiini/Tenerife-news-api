@@ -41,7 +41,7 @@ const newspapers = [
   // Lisää tarvittaessa lisää uutisia
 ];
 
-// Tämä on Vercel serverless-funktio, joka palauttaa uutiset
+// Tämä palauttaa uutiset JSON-muodossa
 module.exports = (req, res) => {
   res.status(200).json(newspapers);
 };
