@@ -5,6 +5,7 @@ const newspapers = [
     image:
       "https://www.tenerifenews.com/wp-content/uploads/2024/09/restaurants-in-santa-cruz-de-tenerife.jpg",
     source: "tenerife-news",
+    date: "2024-03-14", // YYYY-MM-DD
   },
   {
     title: "Spain Tightens Rules on Holiday Rentals in Barcelona and Tenerife",
@@ -12,6 +13,7 @@ const newspapers = [
     image:
       "https://www.tenerifenews.com/wp-content/uploads/2024/09/New-rules-for-Spanish-rentals.jpg",
     source: "tenerife-news",
+    date: "2024-03-12",
   },
   {
     title:
@@ -20,6 +22,7 @@ const newspapers = [
     image:
       "https://planetacanario.b-cdn.net/wp-content/themes/jnews/assets/img/jeg-empty.png",
     source: "planeta-canario",
+    date: "2024-03-10",
   },
   {
     title:
@@ -28,6 +31,7 @@ const newspapers = [
     image:
       "https://planetacanario.b-cdn.net/wp-content/themes/jnews/assets/img/jeg-empty.png",
     source: "planeta-canario",
+    date: "2024-03-08",
   },
   {
     title: "Maná y Residente actuarán en junio en el ‘Tenerife Music Festival’",
@@ -35,16 +39,15 @@ const newspapers = [
     image:
       "https://planetacanario.b-cdn.net/wp-content/themes/jnews/assets/img/jeg-empty.png",
     source: "planeta-canario",
+    date: "2024-03-06",
   },
 ];
 
 module.exports = (req, res) => {
-  // CORS-otsikot, jotta API sallii pyynnöt eri lähteistä (esim. localhost:3000)
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-  // OPTIONS-pyyntöihin pitää palauttaa tyhjä vastaus
   if (req.method === "OPTIONS") {
     return res.status(200).end();
   }
