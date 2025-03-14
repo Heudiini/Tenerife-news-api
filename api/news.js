@@ -2,6 +2,7 @@
 const express = require("express");
 const router = express.Router();
 
+// Uutisten tiedot (käytetään samaa esimerkkiä kuin aiemmin)
 const newspapers = [
   {
     title: "10 Must-Try Restaurants in Santa Cruz de Tenerife",
@@ -40,16 +41,10 @@ const newspapers = [
       "https://planetacanario.b-cdn.net/wp-content/themes/jnews/assets/img/jeg-empty.png",
     source: "planeta-canario",
   },
-  {
-    title:
-      "«Ya no hay excusas para denegar que la momia guanche del Museo Arqueológico Nacional vuelva a Tenerife»",
-    url: "https://planetacanario.com/no-hay-excusas-para-que-la-momia-guanche-del-museo-arqueologico-nacional-vuelva-a-tenerife/",
-    image:
-      "https://planetacanario.b-cdn.net/wp-content/themes/jnews/assets/img/jeg-empty.png",
-    source: "planeta-canario",
-  },
+  // Lisää tarvittaessa lisää uutisia
 ];
 
+// API-reitti, joka palauttaa uutiset
 router.get("/news", (req, res) => {
   res.json(newspapers);
 });
