@@ -1,5 +1,3 @@
-// api/news.js
-
 const newspapers = [
   {
     title: "10 Must-Try Restaurants in Santa Cruz de Tenerife",
@@ -38,10 +36,18 @@ const newspapers = [
       "https://planetacanario.b-cdn.net/wp-content/themes/jnews/assets/img/jeg-empty.png",
     source: "planeta-canario",
   },
-  // Lisää tarvittaessa lisää uutisia
 ];
 
-// Tämä palauttaa uutiset JSON-muodossa
 module.exports = (req, res) => {
+  // CORS-otsikot, jotta API sallii pyynnöt eri lähteistä (esim. localhost:3000)
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+  // OPTIONS-pyyntöihin pitää palauttaa tyhjä vastaus
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+
   res.status(200).json(newspapers);
 };
