@@ -8,7 +8,7 @@ app.get("/", (req, res) => {
   res.send("Welcome to the Tenerife News API!");
 });
 
-// Käytetään API-reittiä uutisten näyttämiseen
+// API-reitti
 app.use("/api", newsRouter);
 
 const PORT = process.env.PORT || 3000;
