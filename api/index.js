@@ -10,34 +10,32 @@ const newspapers = [
   {
     name: "tenerife-news",
     address: "https://www.tenerifenews.com/",
-    base: "",
+    base: "https://www.tenerifenews.com",
   },
   {
     name: "abc-es",
     address: "https://www.abc.es/",
-    base: "",
+    base: "https://www.abc.es",
   },
   {
     name: "planeta-canario",
     address: "https://planetacanario.com/",
-    base: "",
+    base: "https://planetacanario.com",
   },
   {
     name: "diario-de-avisos",
     address: "https://diariodeavisos.elespanol.com/",
-    base: "",
+    base: "https://diariodeavisos.elespanol.com",
   },
   {
     name: "el-dia",
     address: "https://www.eldia.es/tenerife/",
-    base: "",
+    base: "https://www.eldia.es",
   },
 ];
 
-const articles = [];
-
 const fetchArticles = async () => {
-  articles.length = 0;
+  const articles = [];
 
   await Promise.all(
     newspapers.map(async (newspaper) => {
@@ -48,33 +46,43 @@ const fetchArticles = async () => {
 
         $("a").each(function () {
           const title = $(this).text().trim();
-          const url = $(this).attr("href");
+          let url = $(this).attr("href");
           const image = $(this).closest("article").find("img").attr("src");
 
-          const excerpt =
-            $(this)
-              .closest("article")
-              .find("p")
-              .text()
-              .trim()
-              .substring(0, 100) + "...";
+          // Tarkistetaan, että URL on olemassa
+          if (!url) return;
 
+          // Muunnetaan suhteelliset URL:t absoluuttisiksi
+          if (!url.startsWith("http")) {
+            url = newspaper.base + url;
+          }
+
+          // Muunnetaan suhteelliset kuvalinkit absoluuttisiksi
+          let imageUrl = image
+            ? image.startsWith("http")
+              ? image
+              : newspaper.base + image
+            : "";
+
+          // Tarkistetaan, että uutinen liittyy Teneriffaan
           if (
             (title.toLowerCase().includes("tenerife") ||
               title.toLowerCase().includes("santa cruz de tenerife")) &&
             !articles.some((article) => article.url === url)
           ) {
             articles.push({
-              title: title,
-              url: url.startsWith("http") ? url : newspaper.base + url,
-              excerpt: excerpt || title,
-              image: image && image.startsWith("http") ? image : "",
+              title,
+              url,
+              image: imageUrl,
               source: newspaper.name,
             });
           }
         });
       } catch (error) {
-        console.log(`Error fetching from ${newspaper.name}:`, error.message);
+        console.log(
+          `Virhe haettaessa tietoja sivustolta ${newspaper.name}:`,
+          error.message
+        );
       }
     })
   );
@@ -82,13 +90,25 @@ const fetchArticles = async () => {
   return articles.slice(0, 50);
 };
 
+// Pääsivu
 app.get("/", (req, res) => {
   res.json("Tervetuloa uutis-API:in! Tässä on uutisia Tenerifeltä.");
 });
 
+// Uutisten API-reitti
 app.get("/news", async (req, res) => {
-  const allArticles = await fetchArticles();
-  res.json(allArticles);
+  try {
+    const allArticles = await fetchArticles();
+    res.json(allArticles);
+  } catch (error) {
+    res.status(500).json({ error: "Uutisia ei voitu hakea juuri nyt." });
+  }
 });
+
+// Palvelimen käynnistys
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () =>
+  console.log(`API toimii osoitteessa http://localhost:${PORT}`)
+);
 
 module.exports = app;
