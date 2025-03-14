@@ -1,9 +1,0 @@
-[build]
-command = "node index.js"
-publish = "public"  # Vaihda tarvittaessa
-
-[context.production.environment]
-AWS_LAMBDA_JS_RUNTIME = "nodejs20.x"  # Aseta haluttu LTS-versio
-
-[context.deploy-preview.environment]
-AWS_LAMBDA_JS_RUNTIME = "nodejs20.x"  # Aseta haluttu LTS-versio
