@@ -1,7 +1,14 @@
-// index.js
 const express = require("express");
+const cors = require("cors");
+const dotenv = require("dotenv");
+
+dotenv.config(); // Lataa ympäristömuuttujat .env-tiedostosta
+
 const app = express();
-const newsRouter = require("./api/news");
+app.use(cors()); // Sallii CORS-pyynnöt
+app.use(express.json()); // JSON-datan käsittely
+
+const newsRouter = require("./api/news.js"); // Varmistetaan, että Vercel löytää tiedoston
 
 // Pääreitti
 app.get("/", (req, res) => {
@@ -9,9 +16,9 @@ app.get("/", (req, res) => {
 });
 
 // API-reitti
-app.use("/api", newsRouter);
+app.use("/api/news", newsRouter);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`✅ Server running on port ${PORT}`);
 });

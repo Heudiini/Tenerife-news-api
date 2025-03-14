@@ -1,8 +1,5 @@
 // api/news.js
-const express = require("express");
-const router = express.Router();
 
-// Uutisten tiedot (käytetään samaa esimerkkiä kuin aiemmin)
 const newspapers = [
   {
     title: "10 Must-Try Restaurants in Santa Cruz de Tenerife",
@@ -44,9 +41,7 @@ const newspapers = [
   // Lisää tarvittaessa lisää uutisia
 ];
 
-// API-reitti, joka palauttaa uutiset
-router.get("/news", (req, res) => {
-  res.json(newspapers);
-});
-
-module.exports = router;
+// Tämä on Vercel serverless-funktio, joka palauttaa uutiset
+module.exports = (req, res) => {
+  res.status(200).json(newspapers);
+};
