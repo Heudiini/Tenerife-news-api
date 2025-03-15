@@ -1,8 +1,8 @@
 const axios = require("axios");
 const cheerio = require("cheerio");
 
-async function fetchNewsFromTenerifeNews() {
-  const url = "https://www.tenerifenews.com";
+async function fetchNewsFromTenerifeNews(page = 1, limit = 10) {
+  const url = `https://www.tenerifenews.com/page/${page}/`; // Oletetaan, että sivut ovat "page/1", "page/2", jne.
   const response = await axios.get(url);
   const $ = cheerio.load(response.data);
 
@@ -25,11 +25,12 @@ async function fetchNewsFromTenerifeNews() {
     }
   });
 
-  return articles;
+  // Rajataan uutiset, jotta ne täsmäävät limitin ja sivun kanssa
+  return articles.slice((page - 1) * limit, page * limit);
 }
 
-async function fetchNewsFromPlanetaCanario() {
-  const url = "https://planetacanario.com";
+async function fetchNewsFromPlanetaCanario(page = 1, limit = 10) {
+  const url = `https://planetacanario.com/page/${page}/`; // Oletetaan, että sivut ovat "page/1", "page/2", jne.
   const response = await axios.get(url);
   const $ = cheerio.load(response.data);
 
@@ -52,7 +53,8 @@ async function fetchNewsFromPlanetaCanario() {
     }
   });
 
-  return articles;
+  // Rajataan uutiset, jotta ne täsmäävät limitin ja sivun kanssa
+  return articles.slice((page - 1) * limit, page * limit);
 }
 
 module.exports = async (req, res) => {
@@ -65,9 +67,17 @@ module.exports = async (req, res) => {
   }
 
   try {
-    // Haetaan uutiset molemmista lähteistä
-    const newsFromTenerifeNews = await fetchNewsFromTenerifeNews();
-    const newsFromPlanetaCanario = await fetchNewsFromPlanetaCanario();
+    const { page = 1, limit = 10 } = req.query; // Haetaan page ja limit query-parametreista
+
+    // Haetaan uutiset molemmista lähteistä, määritellään sivu ja raja
+    const newsFromTenerifeNews = await fetchNewsFromTenerifeNews(
+      parseInt(page),
+      parseInt(limit)
+    );
+    const newsFromPlanetaCanario = await fetchNewsFromPlanetaCanario(
+      parseInt(page),
+      parseInt(limit)
+    );
 
     // Yhdistetään uutiset
     const allNews = [...newsFromTenerifeNews, ...newsFromPlanetaCanario];
