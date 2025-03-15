@@ -1,49 +1,40 @@
-const newspapers = [
-  {
-    title: "10 Must-Try Restaurants in Santa Cruz de Tenerife",
-    url: "https://www.tenerifenews.com/restaurants-in-santa-cruz-de-tenerife/",
-    image:
-      "https://www.tenerifenews.com/wp-content/uploads/2024/09/restaurants-in-santa-cruz-de-tenerife.jpg",
-    source: "tenerife-news",
-    date: "2024-03-14",
-  },
-  {
-    title: "Spain Tightens Rules on Holiday Rentals in Barcelona and Tenerife",
-    url: "https://www.tenerifenews.com/spain-tightens-rules-on-holiday-rentals/",
-    image:
-      "https://www.tenerifenews.com/wp-content/uploads/2024/09/New-rules-for-Spanish-rentals.jpg",
-    source: "tenerife-news",
-    date: "2024-03-12",
-  },
-  {
-    title:
-      "Tenerife necesitaría 20 veces más cantidad de energías limpias para autoabastecerse con renovables",
-    url: "https://planetacanario.com/tenerife-tendria-que-multiplicar-por-20-su-potencia-de-energias-limpias-para-ser-100-renovable/",
-    image:
-      "https://planetacanario.b-cdn.net/wp-content/themes/jnews/assets/img/jeg-empty.png",
-    source: "planeta-canario",
-    date: "2024-03-10",
-  },
-  {
-    title:
-      "Los cabildos de Tenerife y Gran Canaria garantizan la gratuidad del transporte público en 2025",
-    url: "https://planetacanario.com/los-cabildos-de-tenerife-y-gran-canaria-garantizan-la-gratuidad-del-transporte-publico-en-2025/",
-    image:
-      "https://planetacanario.b-cdn.net/wp-content/themes/jnews/assets/img/jeg-empty.png",
-    source: "planeta-canario",
-    date: "2024-03-08",
-  },
-  {
-    title: "Maná y Residente actuarán en junio en el ‘Tenerife Music Festival’",
-    url: "https://planetacanario.com/mana-y-residente-actuaran-en-junio-en-el-tenerife-music-festival/",
-    image:
-      "https://planetacanario.b-cdn.net/wp-content/themes/jnews/assets/img/jeg-empty.png",
-    source: "planeta-canario",
-    date: "2024-03-06",
-  },
-];
+const axios = require("axios");
+const cheerio = require("cheerio");
 
-module.exports = (req, res) => {
+const scrapeNews = async (url) => {
+  try {
+    const { data } = await axios.get(url);
+    const $ = cheerio.load(data);
+
+    // Esimerkiksi Tenerifenews.com-sivuston uutisten hakeminen
+    const articles = [];
+    $("article").each((i, element) => {
+      const title = $(element).find("h2").text().trim();
+      const link = $(element).find("a").attr("href");
+      const image = $(element).find("img").attr("src");
+      const source = "tenerife-news"; // Tai voit lisätä sen dynaamisesti
+      const date = $(element).find("time").text().trim();
+
+      // Varmistetaan, että uutinen sisältää tarvittavat tiedot
+      if (title && link && image) {
+        articles.push({
+          title,
+          url: link,
+          image: image.startsWith("http") ? image : `https:${image}`, // Täydellinen URL
+          source,
+          date,
+        });
+      }
+    });
+
+    return articles;
+  } catch (error) {
+    console.error("Error scraping news from", url, error);
+    return null; // Jos scraper ei toimi, palautetaan null
+  }
+};
+
+module.exports = async (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -52,22 +43,55 @@ module.exports = (req, res) => {
     return res.status(200).end();
   }
 
-  // Hae sivunumero ja limit parametrit (oletuksena 1. sivu ja 2 uutista per sivu)
+  // Hae hakusana ja rajausparametrit
+  const searchQuery = req.query.search || "Tenerife"; // Oletuksena "Tenerife"
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 2;
 
-  // Laske aloitusindeksi ja loppuindeksi
+  // Rajausparametrit
   const startIndex = (page - 1) * limit;
   const endIndex = startIndex + limit;
 
-  // Rajataan lista
-  const paginatedNews = newspapers.slice(startIndex, endIndex);
+  // Sivustot, joista uutiset haetaan
+  const newsSources = [
+    "https://www.tenerifenews.com", // Esim. Tenerifenews
+    "https://planetacanario.com", // Esim. Planetacanario
+    "https://www.eldia.es/tenerife/", // Esim. Eldia
+    "https://www.diariodeavisos.com", // Esim. Diariodeavisos
+    "https://www.canaryislandsinfo.co.uk", // Canary Islands News
+    "https://www.thelocal.es", // The Local Spain
+    "https://www.tenerifeweekly.com", // Tenerife Weekly
+    "https://www.canarianweekly.com", // Canarian Weekly
+    "https://www.elpais.com", // El País
+    "https://www.abc.es", // ABC España
+    "https://www.lavanguardia.com", // La Vanguardia
+  ];
+
+  let allNews = [];
+
+  // Käydään läpi kaikki lähteet ja haetaan uutisia
+  for (let i = 0; i < newsSources.length; i++) {
+    const articles = await scrapeNews(newsSources[i]);
+
+    // Jos uutiset löytyivät, lisätään ne kokonaislistalle
+    if (articles) {
+      allNews = [...allNews, ...articles];
+    }
+  }
+
+  // Suodatetaan uutiset hakusanan perusteella
+  const filteredNews = allNews.filter((news) =>
+    news.title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Rajataan uutiset sivutuksen mukaan
+  const paginatedNews = filteredNews.slice(startIndex, endIndex);
 
   res.status(200).json({
     page,
     limit,
-    total: newspapers.length,
-    totalPages: Math.ceil(newspapers.length / limit),
+    total: filteredNews.length,
+    totalPages: Math.ceil(filteredNews.length / limit),
     data: paginatedNews,
   });
 };
