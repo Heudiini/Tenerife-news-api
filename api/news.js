@@ -25,8 +25,7 @@ async function fetchNewsFromTenerifeNews(page = 1, limit = 10) {
     }
   });
 
-  // Rajataan uutiset, jotta ne täsmäävät limitin ja sivun kanssa
-  return articles.slice((page - 1) * limit, page * limit);
+  return articles; // Ei rajata, koska rajaus tapahtuu päässä
 }
 
 async function fetchNewsFromPlanetaCanario(page = 1, limit = 10) {
@@ -53,8 +52,7 @@ async function fetchNewsFromPlanetaCanario(page = 1, limit = 10) {
     }
   });
 
-  // Rajataan uutiset, jotta ne täsmäävät limitin ja sivun kanssa
-  return articles.slice((page - 1) * limit, page * limit);
+  return articles; // Ei rajata, koska rajaus tapahtuu päässä
 }
 
 module.exports = async (req, res) => {
@@ -69,7 +67,7 @@ module.exports = async (req, res) => {
   try {
     const { page = 1, limit = 10 } = req.query; // Haetaan page ja limit query-parametreista
 
-    // Haetaan uutiset molemmista lähteistä, määritellään sivu ja raja
+    // Haetaan uutiset molemmista lähteistä
     const newsFromTenerifeNews = await fetchNewsFromTenerifeNews(
       parseInt(page),
       parseInt(limit)
@@ -82,7 +80,17 @@ module.exports = async (req, res) => {
     // Yhdistetään uutiset
     const allNews = [...newsFromTenerifeNews, ...newsFromPlanetaCanario];
 
-    res.status(200).json(allNews);
+    // Lasketaan, kuinka monta sivua on yhteensä
+    const totalPages = Math.ceil(allNews.length / limit);
+
+    // Sivutetaan uutiset
+    const paginatedNews = allNews.slice((page - 1) * limit, page * limit);
+
+    res.status(200).json({
+      page,
+      totalPages,
+      news: paginatedNews,
+    });
   } catch (error) {
     console.error("Virhe uutisten hakemisessa:", error.message);
     res.status(500).json({
