@@ -5,7 +5,7 @@ const newspapers = [
     image:
       "https://www.tenerifenews.com/wp-content/uploads/2024/09/restaurants-in-santa-cruz-de-tenerife.jpg",
     source: "tenerife-news",
-    date: "2024-03-14", // YYYY-MM-DD
+    date: "2024-03-14",
   },
   {
     title: "Spain Tightens Rules on Holiday Rentals in Barcelona and Tenerife",
@@ -52,5 +52,22 @@ module.exports = (req, res) => {
     return res.status(200).end();
   }
 
-  res.status(200).json(newspapers);
+  // Hae sivunumero ja limit parametrit (oletuksena 1. sivu ja 2 uutista per sivu)
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 2;
+
+  // Laske aloitusindeksi ja loppuindeksi
+  const startIndex = (page - 1) * limit;
+  const endIndex = startIndex + limit;
+
+  // Rajataan lista
+  const paginatedNews = newspapers.slice(startIndex, endIndex);
+
+  res.status(200).json({
+    page,
+    limit,
+    total: newspapers.length,
+    totalPages: Math.ceil(newspapers.length / limit),
+    data: paginatedNews,
+  });
 };
