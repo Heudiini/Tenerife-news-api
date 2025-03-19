@@ -1,26 +1,25 @@
 const axios = require("axios");
 const cheerio = require("cheerio");
-const translate = require("google-translate-api"); // Lisää Google-käännös-kirjasto
 
-// Funktio uutisten hakemiseen
-async function fetchNewsFromSource(url, sourceName, page = 1) {
+async function fetchNewsFromTenerifeNews(page = 1) {
+  const url = `https://www.tenerifenews.com/page/${page}/`;
   try {
-    const response = await axios.get(`${url}?page=${page}`);
+    const response = await axios.get(url);
     const $ = cheerio.load(response.data);
     const articles = [];
 
     $("article").each((i, element) => {
       const title = $(element).find("h2 a").text().trim();
-      const articleUrl = $(element).find("h2 a").attr("href");
+      const url = $(element).find("h2 a").attr("href");
       const image = $(element).find("img").attr("src");
-      const date = $(element).find("time").attr("datetime") || "Unknown";
+      const date = $(element).find(".entry-date").text().trim() || "Unknown";
 
-      if (title && articleUrl && image) {
+      if (title && url && image) {
         articles.push({
           title,
-          url: articleUrl,
+          url,
           image,
-          source: sourceName,
+          source: "tenerife-news",
           date,
         });
       }
@@ -28,26 +27,135 @@ async function fetchNewsFromSource(url, sourceName, page = 1) {
 
     return articles;
   } catch (error) {
-    console.error(`Error fetching from ${sourceName}:`, error.message);
+    console.error("Error fetching from Tenerife News:", error.message);
     return [];
   }
 }
 
-// Funktio uutisten kääntämiseksi espanjasta englanniksi
-async function translateNewsToEnglish(news) {
+async function fetchNewsFromPlanetaCanario(page = 1) {
+  const url = `https://planetacanario.com/page/${page}/`;
   try {
-    if (news.title && news.title !== "") {
-      const translated = await translate(news.title, { to: "en" });
-      news.title = translated.text;
-    }
-    return news;
+    const response = await axios.get(url);
+    const $ = cheerio.load(response.data);
+    const articles = [];
+
+    $("article").each((i, element) => {
+      const title = $(element).find("h2 a").text().trim();
+      const url = $(element).find("h2 a").attr("href");
+      const image = $(element).find("img").attr("src");
+      const date = $(element).find("time").attr("datetime") || "Unknown";
+
+      if (title && url && image) {
+        articles.push({
+          title,
+          url,
+          image,
+          source: "planeta-canario",
+          date,
+        });
+      }
+    });
+
+    return articles;
   } catch (error) {
-    console.error("Error translating news:", error.message);
-    return news;
+    console.error("Error fetching from Planeta Canario:", error.message);
+    return [];
   }
 }
 
-// Pääsovellus
+async function fetchNewsFromCanarianWeekly(page = 1) {
+  const url = `https://www.canarianweekly.com/page/${page}/`;
+  try {
+    const response = await axios.get(url);
+    const $ = cheerio.load(response.data);
+    const articles = [];
+
+    $("article").each((i, element) => {
+      const title = $(element).find("h2 a").text().trim();
+      const url = $(element).find("h2 a").attr("href");
+      const image = $(element).find("img").attr("src");
+      const date = $(element).find("time").attr("datetime") || "Unknown";
+
+      if (title && url && image) {
+        articles.push({
+          title,
+          url,
+          image,
+          source: "canarian-weekly",
+          date,
+        });
+      }
+    });
+
+    return articles;
+  } catch (error) {
+    console.error("Error fetching from Canarian Weekly:", error.message);
+    return [];
+  }
+}
+
+async function fetchNewsFromTenerifeWeekly(page = 1) {
+  const url = `https://www.tenerifeweekly.com/page/${page}/`;
+  try {
+    const response = await axios.get(url);
+    const $ = cheerio.load(response.data);
+    const articles = [];
+
+    $("article").each((i, element) => {
+      const title = $(element).find("h2 a").text().trim();
+      const url = $(element).find("h2 a").attr("href");
+      const image = $(element).find("img").attr("src");
+      const date = $(element).find("time").attr("datetime") || "Unknown";
+
+      if (title && url && image) {
+        articles.push({
+          title,
+          url,
+          image,
+          source: "tenerife-weekly",
+          date,
+        });
+      }
+    });
+
+    return articles;
+  } catch (error) {
+    console.error("Error fetching from Tenerife Weekly:", error.message);
+    return [];
+  }
+}
+
+async function fetchNewsFromTheCanary(page = 1) {
+  const url = `https://www.thecanary.co/page/${page}/`;
+  try {
+    const response = await axios.get(url);
+    const $ = cheerio.load(response.data);
+    const articles = [];
+
+    $("article").each((i, element) => {
+      const title = $(element).find("h2 a").text().trim();
+      const url = $(element).find("h2 a").attr("href");
+      const image = $(element).find("img").attr("src");
+      const date = $(element).find("time").attr("datetime") || "Unknown";
+
+      if (title && url && image) {
+        articles.push({
+          title,
+          url,
+          image,
+          source: "the-canary",
+          date,
+        });
+      }
+    });
+
+    return articles;
+  } catch (error) {
+    console.error("Error fetching from The Canary:", error.message);
+    return [];
+  }
+}
+
 module.exports = async (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
@@ -61,58 +169,35 @@ module.exports = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
 
-    // Lisää lähteet
-    const sources = [
-      {
-        url: "https://www.tenerifenews.com/api/v1/news",
-        sourceName: "tenerife-news",
-      },
-      {
-        url: "https://www.planetacanario.com/api/v1/news",
-        sourceName: "planeta-canario",
-      },
-      {
-        url: "https://www.canarianweekly.com/api/v1/news",
-        sourceName: "canarian-weekly",
-      },
-      {
-        url: "https://www.tenerifeweekly.com/api/v1/news",
-        sourceName: "tenerife-weekly",
-      },
-      { url: "https://www.thecanary.co/api/v1/news", sourceName: "the-canary" },
-      {
-        url: "https://www.tenerifetoday.com/api/v1/news",
-        sourceName: "tenerife-today",
-      },
-      {
-        url: "https://www.surinenglish.com/api/v1/news",
-        sourceName: "sur-in-english",
-      },
-      { url: "https://www.eldia.es/api/v1/news", sourceName: "el-dia" },
+    // Haetaan uutiset kaikista lähteistä
+    const [
+      newsFromTenerifeNews,
+      newsFromPlanetaCanario,
+      newsFromCanarianWeekly,
+      newsFromTenerifeWeekly,
+      newsFromTheCanary,
+    ] = await Promise.all([
+      fetchNewsFromTenerifeNews(page),
+      fetchNewsFromPlanetaCanario(page),
+      fetchNewsFromCanarianWeekly(page),
+      fetchNewsFromTenerifeWeekly(page),
+      fetchNewsFromTheCanary(page),
+    ]);
+
+    let allNews = [
+      ...newsFromTenerifeNews,
+      ...newsFromPlanetaCanario,
+      ...newsFromCanarianWeekly,
+      ...newsFromTenerifeWeekly,
+      ...newsFromTheCanary,
     ];
 
-    // Haetaan uutiset kaikista lähteistä
-    const newsPromises = sources.map((source) =>
-      fetchNewsFromSource(source.url, source.sourceName, page)
-    );
-    const allNews = await Promise.all(newsPromises);
-    let combinedNews = allNews.flat();
-
-    // Käännetään espanjankieliset uutiset englanniksi
-    for (let news of combinedNews) {
-      // Oletetaan, että jos uutinen on espanjaksi, sen otsikko voi olla esimerkiksi "titulo en español"
-      if (news.title && news.title.includes("en español")) {
-        // Tarkista, jos uutinen on espanjaksi
-        news = await translateNewsToEnglish(news);
-      }
-    }
-
     // Järjestetään uutiset päiväyksen mukaan
-    combinedNews.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+    allNews.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
 
     // Sivutetaan uutiset
-    const totalPages = Math.ceil(combinedNews.length / limit);
-    const paginatedNews = combinedNews.slice((page - 1) * limit, page * limit);
+    const totalPages = Math.ceil(allNews.length / limit);
+    const paginatedNews = allNews.slice((page - 1) * limit, page * limit);
 
     res.status(200).json({
       page,
