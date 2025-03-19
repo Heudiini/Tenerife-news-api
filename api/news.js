@@ -181,7 +181,6 @@ module.exports = async (req, res) => {
       fetchNewsFromPlanetaCanario(page),
       fetchNewsFromCanarianWeekly(page),
       fetchNewsFromTenerifeWeekly(page),
-      fetchNewsFromTheCanary(page),
     ]);
 
     let allNews = [
