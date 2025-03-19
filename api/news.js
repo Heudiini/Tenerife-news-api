@@ -125,37 +125,6 @@ async function fetchNewsFromTenerifeWeekly(page = 1) {
   }
 }
 
-async function fetchNewsFromTheCanary(page = 1) {
-  const url = `https://www.thecanary.co/page/${page}/`;
-  try {
-    const response = await axios.get(url);
-    const $ = cheerio.load(response.data);
-    const articles = [];
-
-    $("article").each((i, element) => {
-      const title = $(element).find("h2 a").text().trim();
-      const url = $(element).find("h2 a").attr("href");
-      const image = $(element).find("img").attr("src");
-      const date = $(element).find("time").attr("datetime") || "Unknown";
-
-      if (title && url && image) {
-        articles.push({
-          title,
-          url,
-          image,
-          source: "the-canary",
-          date,
-        });
-      }
-    });
-
-    return articles;
-  } catch (error) {
-    console.error("Error fetching from The Canary:", error.message);
-    return [];
-  }
-}
-
 module.exports = async (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
@@ -175,7 +144,6 @@ module.exports = async (req, res) => {
       newsFromPlanetaCanario,
       newsFromCanarianWeekly,
       newsFromTenerifeWeekly,
-      newsFromTheCanary,
     ] = await Promise.all([
       fetchNewsFromTenerifeNews(page),
       fetchNewsFromPlanetaCanario(page),
@@ -188,7 +156,6 @@ module.exports = async (req, res) => {
       ...newsFromPlanetaCanario,
       ...newsFromCanarianWeekly,
       ...newsFromTenerifeWeekly,
-      ...newsFromTheCanary,
     ];
 
     // Järjestetään uutiset päiväyksen mukaan
