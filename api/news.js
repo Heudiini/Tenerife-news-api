@@ -1,35 +1,20 @@
 const axios = require("axios");
 const cheerio = require("cheerio");
 
-const translateText = async (text, targetLang = "en") => {
-  const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLang}&dt=t&q=${encodeURIComponent(
-    text
-  )}`;
-  try {
-    const response = await axios.get(url);
-    return response.data[0].map((t) => t[0]).join("");
-  } catch (error) {
-    console.error("Käännös epäonnistui:", error.message);
-    return text; // Palautetaan alkuperäinen teksti, jos käännös epäonnistuu
-  }
-};
-
 async function fetchNewsFromTenerifeNews(page = 1) {
   const url = `https://www.tenerifenews.com/page/${page}/`;
-  const response = await axios.get(url);
-  const $ = cheerio.load(response.data);
+  try {
+    const response = await axios.get(url);
+    const $ = cheerio.load(response.data);
+    const articles = [];
 
-  const articles = [];
-
-  const articlePromises = $("article")
-    .map(async (i, element) => {
-      let title = $(element).find("h2 a").text().trim();
+    $("article").each((i, element) => {
+      const title = $(element).find("h2 a").text().trim();
       const url = $(element).find("h2 a").attr("href");
       const image = $(element).find("img").attr("src");
-      const date = $(element).find(".date").text().trim();
+      const date = $(element).find(".entry-date").text().trim() || "Unknown";
 
       if (title && url && image) {
-        title = await translateText(title);
         articles.push({
           title,
           url,
@@ -38,29 +23,29 @@ async function fetchNewsFromTenerifeNews(page = 1) {
           date,
         });
       }
-    })
-    .get();
+    });
 
-  await Promise.all(articlePromises);
-  return articles;
+    return articles;
+  } catch (error) {
+    console.error("Error fetching from Tenerife News:", error.message);
+    return [];
+  }
 }
 
 async function fetchNewsFromPlanetaCanario(page = 1) {
   const url = `https://planetacanario.com/page/${page}/`;
-  const response = await axios.get(url);
-  const $ = cheerio.load(response.data);
+  try {
+    const response = await axios.get(url);
+    const $ = cheerio.load(response.data);
+    const articles = [];
 
-  const articles = [];
-
-  const articlePromises = $("article")
-    .map(async (i, element) => {
-      let title = $(element).find("h2 a").text().trim();
+    $("article").each((i, element) => {
+      const title = $(element).find("h2 a").text().trim();
       const url = $(element).find("h2 a").attr("href");
       const image = $(element).find("img").attr("src");
-      const date = $(element).find(".date").text().trim();
+      const date = $(element).find("time").attr("datetime") || "Unknown";
 
       if (title && url && image) {
-        title = await translateText(title);
         articles.push({
           title,
           url,
@@ -69,11 +54,13 @@ async function fetchNewsFromPlanetaCanario(page = 1) {
           date,
         });
       }
-    })
-    .get();
+    });
 
-  await Promise.all(articlePromises);
-  return articles;
+    return articles;
+  } catch (error) {
+    console.error("Error fetching from Planeta Canario:", error.message);
+    return [];
+  }
 }
 
 module.exports = async (req, res) => {
@@ -86,18 +73,24 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const { page = 1, limit = 10 } = req.query;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
 
-    const newsFromTenerifeNews = await fetchNewsFromTenerifeNews(
-      parseInt(page)
-    );
-    const newsFromPlanetaCanario = await fetchNewsFromPlanetaCanario(
-      parseInt(page)
-    );
+    // Haetaan uutiset molemmista lähteistä samalle sivulle
+    const [newsFromTenerifeNews, newsFromPlanetaCanario] = await Promise.all([
+      fetchNewsFromTenerifeNews(page),
+      fetchNewsFromPlanetaCanario(page),
+    ]);
 
-    const allNews = [...newsFromTenerifeNews, ...newsFromPlanetaCanario];
+    let allNews = [...newsFromTenerifeNews, ...newsFromPlanetaCanario];
 
+    // Järjestetään uutiset päiväyksen mukaan (jos saatavilla)
+    allNews.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+
+    // Lasketaan kokonaissivut
     const totalPages = Math.ceil(allNews.length / limit);
+
+    // Sivutetaan uutiset
     const paginatedNews = allNews.slice((page - 1) * limit, page * limit);
 
     res.status(200).json({
@@ -106,9 +99,9 @@ module.exports = async (req, res) => {
       news: paginatedNews,
     });
   } catch (error) {
-    console.error("Virhe uutisten hakemisessa:", error.message);
+    console.error("Error fetching news:", error.message);
     res.status(500).json({
-      error: "Uutisten hakeminen epäonnistui",
+      error: "News fetching failed",
       details: error.message,
     });
   }
