@@ -2,7 +2,7 @@ const axios = require("axios");
 const cheerio = require("cheerio");
 
 async function fetchNewsFromTenerifeNews(page = 1) {
-  const url = `https://www.tenerifenews.com/page/${page}/`;
+  const url = `https://www.tenerifenews.com/category/news/page/${page}/`; // Muutettu URL
   try {
     const response = await axios.get(url);
     const $ = cheerio.load(response.data);
@@ -125,8 +125,8 @@ async function fetchNewsFromTenerifeWeekly(page = 1) {
   }
 }
 
-async function fetchNewsFromTenerifeWeeklyBlog(page = 1) {
-  const url = `https://tenerifeweekly.com/category/blog/page/${page}/`;
+async function fetchNewsFromTenerifeBlog(page = 1) {
+  const url = `https://tenerifeweekly.com/category/blog/page/${page}/`; // Uusi URL
   try {
     const response = await axios.get(url);
     const $ = cheerio.load(response.data);
@@ -144,14 +144,14 @@ async function fetchNewsFromTenerifeWeeklyBlog(page = 1) {
           link,
           image: image || "",
           date: date || "",
-          source: "tenerife-weekly-blog",
+          source: "tenerife-blog",
         });
       }
     });
 
     return articles;
   } catch (error) {
-    console.error("Error fetching from Tenerife Weekly Blog:", error.message);
+    console.error("Error fetching from Tenerife Blog:", error.message);
     return [];
   }
 }
@@ -175,13 +175,13 @@ module.exports = async (req, res) => {
       newsFromPlanetaCanario,
       newsFromCanarianWeekly,
       newsFromTenerifeWeekly,
-      newsFromTenerifeWeeklyBlog,
+      newsFromTenerifeBlog, // Uusi lähde
     ] = await Promise.all([
       fetchNewsFromTenerifeNews(page),
       fetchNewsFromPlanetaCanario(page),
       fetchNewsFromCanarianWeekly(page),
       fetchNewsFromTenerifeWeekly(page),
-      fetchNewsFromTenerifeWeeklyBlog(page),
+      fetchNewsFromTenerifeBlog(page), // Uusi lähde lisätty
     ]);
 
     let allNews = [
@@ -189,7 +189,7 @@ module.exports = async (req, res) => {
       ...newsFromPlanetaCanario,
       ...newsFromCanarianWeekly,
       ...newsFromTenerifeWeekly,
-      ...newsFromTenerifeWeeklyBlog,
+      ...newsFromTenerifeBlog, // Lisätään uusi lähde
     ];
 
     // Muutetaan päivämäärät Date-objekteiksi vertailun helpottamiseksi
