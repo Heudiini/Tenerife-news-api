@@ -158,8 +158,17 @@ module.exports = async (req, res) => {
       ...newsFromTenerifeWeekly,
     ];
 
-    // Järjestetään uutiset päiväyksen mukaan
-    allNews.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+    // Muutetaan päivämäärät Date-objekteiksi vertailun helpottamiseksi
+    allNews = allNews.map((article) => {
+      const date = new Date(article.date);
+      return {
+        ...article,
+        date: isNaN(date.getTime()) ? new Date() : date, // Jos päivämäärä on virheellinen, käytetään nykyistä päivämäärää
+      };
+    });
+
+    // Järjestetään uutiset päivämäärän mukaan (tuoreimmasta vanhimpaan)
+    allNews.sort((a, b) => b.date - a.date);
 
     // Sivutetaan uutiset
     const totalPages = Math.ceil(allNews.length / limit);
