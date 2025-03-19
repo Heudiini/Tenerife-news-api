@@ -125,6 +125,37 @@ async function fetchNewsFromTenerifeWeekly(page = 1) {
   }
 }
 
+async function fetchNewsFromTenerifeWeeklyBlog(page = 1) {
+  const url = `https://tenerifeweekly.com/category/blog/page/${page}/`;
+  try {
+    const response = await axios.get(url);
+    const $ = cheerio.load(response.data);
+    const articles = [];
+
+    $(".post .post-header").each((i, element) => {
+      const title = $(element).find("h2 a").text();
+      const link = $(element).find("h2 a").attr("href");
+      const image = $(element).find("img").attr("src");
+      const date = $(element).find(".post-meta time").text();
+
+      if (title && link) {
+        articles.push({
+          title,
+          link,
+          image: image || "",
+          date: date || "",
+          source: "tenerife-weekly-blog",
+        });
+      }
+    });
+
+    return articles;
+  } catch (error) {
+    console.error("Error fetching from Tenerife Weekly Blog:", error.message);
+    return [];
+  }
+}
+
 module.exports = async (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
@@ -144,11 +175,13 @@ module.exports = async (req, res) => {
       newsFromPlanetaCanario,
       newsFromCanarianWeekly,
       newsFromTenerifeWeekly,
+      newsFromTenerifeWeeklyBlog,
     ] = await Promise.all([
       fetchNewsFromTenerifeNews(page),
       fetchNewsFromPlanetaCanario(page),
       fetchNewsFromCanarianWeekly(page),
       fetchNewsFromTenerifeWeekly(page),
+      fetchNewsFromTenerifeWeeklyBlog(page),
     ]);
 
     let allNews = [
@@ -156,6 +189,7 @@ module.exports = async (req, res) => {
       ...newsFromPlanetaCanario,
       ...newsFromCanarianWeekly,
       ...newsFromTenerifeWeekly,
+      ...newsFromTenerifeWeeklyBlog,
     ];
 
     // Muutetaan päivämäärät Date-objekteiksi vertailun helpottamiseksi
