@@ -64,25 +64,25 @@ async function fetchNewsFromPlanetaCanario(page = 1) {
 }
 
 async function fetchNewsFromCanarianWeekly(page = 1) {
-  const url = `https://www.canarianweekly.com/page/${page}/`;
+  const url = `https://www.canarianweekly.com/category/tenerife/page/${page}/`;
   try {
     const response = await axios.get(url);
     const $ = cheerio.load(response.data);
     const articles = [];
 
-    $("article").each((i, element) => {
-      const title = $(element).find("h2 a").text().trim();
-      const url = $(element).find("h2 a").attr("href");
+    $(".category-posts .post").each((i, element) => {
+      const title = $(element).find("h3 a").text();
+      const link = $(element).find("h3 a").attr("href");
       const image = $(element).find("img").attr("src");
-      const date = $(element).find("time").attr("datetime") || "Unknown";
+      const date = $(element).find(".entry-date").text();
 
-      if (title && url && image) {
+      if (title && link) {
         articles.push({
           title,
-          url,
-          image,
+          link,
+          image: image || "",
+          date: date || "",
           source: "canarian-weekly",
-          date,
         });
       }
     });
@@ -95,25 +95,25 @@ async function fetchNewsFromCanarianWeekly(page = 1) {
 }
 
 async function fetchNewsFromTenerifeWeekly(page = 1) {
-  const url = `https://www.tenerifeweekly.com/page/${page}/`;
+  const url = `https://tenerifeweekly.com/page/${page}/`;
   try {
     const response = await axios.get(url);
     const $ = cheerio.load(response.data);
     const articles = [];
 
-    $("article").each((i, element) => {
-      const title = $(element).find("h2 a").text().trim();
-      const url = $(element).find("h2 a").attr("href");
+    $(".post .post-header").each((i, element) => {
+      const title = $(element).find("h2 a").text();
+      const link = $(element).find("h2 a").attr("href");
       const image = $(element).find("img").attr("src");
-      const date = $(element).find("time").attr("datetime") || "Unknown";
+      const date = $(element).find(".post-meta time").text();
 
-      if (title && url && image) {
+      if (title && link) {
         articles.push({
           title,
-          url,
-          image,
+          link,
+          image: image || "",
+          date: date || "",
           source: "tenerife-weekly",
-          date,
         });
       }
     });
