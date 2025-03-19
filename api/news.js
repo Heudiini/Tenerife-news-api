@@ -1,58 +1,79 @@
 const axios = require("axios");
 const cheerio = require("cheerio");
 
-async function fetchNewsFromTenerifeNews(page = 1, limit = 10) {
-  const url = `https://www.tenerifenews.com/page/${page}/`; // Oletetaan, että sivut ovat "page/1", "page/2", jne.
+const translateText = async (text, targetLang = "en") => {
+  const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLang}&dt=t&q=${encodeURIComponent(
+    text
+  )}`;
+  try {
+    const response = await axios.get(url);
+    return response.data[0].map((t) => t[0]).join("");
+  } catch (error) {
+    console.error("Käännös epäonnistui:", error.message);
+    return text; // Palautetaan alkuperäinen teksti, jos käännös epäonnistuu
+  }
+};
+
+async function fetchNewsFromTenerifeNews(page = 1) {
+  const url = `https://www.tenerifenews.com/page/${page}/`;
   const response = await axios.get(url);
   const $ = cheerio.load(response.data);
 
   const articles = [];
 
-  $("article").each((i, element) => {
-    const title = $(element).find("h2 a").text().trim();
-    const url = $(element).find("h2 a").attr("href");
-    const image = $(element).find("img").attr("src");
-    const date = $(element).find(".date").text().trim();
+  const articlePromises = $("article")
+    .map(async (i, element) => {
+      let title = $(element).find("h2 a").text().trim();
+      const url = $(element).find("h2 a").attr("href");
+      const image = $(element).find("img").attr("src");
+      const date = $(element).find(".date").text().trim();
 
-    if (title && url && image) {
-      articles.push({
-        title,
-        url,
-        image,
-        source: "tenerife-news",
-        date,
-      });
-    }
-  });
+      if (title && url && image) {
+        title = await translateText(title);
+        articles.push({
+          title,
+          url,
+          image,
+          source: "tenerife-news",
+          date,
+        });
+      }
+    })
+    .get();
 
-  return articles; // Ei rajata, koska rajaus tapahtuu päässä
+  await Promise.all(articlePromises);
+  return articles;
 }
 
-async function fetchNewsFromPlanetaCanario(page = 1, limit = 10) {
-  const url = `https://planetacanario.com/page/${page}/`; // Oletetaan, että sivut ovat "page/1", "page/2", jne.
+async function fetchNewsFromPlanetaCanario(page = 1) {
+  const url = `https://planetacanario.com/page/${page}/`;
   const response = await axios.get(url);
   const $ = cheerio.load(response.data);
 
   const articles = [];
 
-  $("article").each((i, element) => {
-    const title = $(element).find("h2 a").text().trim();
-    const url = $(element).find("h2 a").attr("href");
-    const image = $(element).find("img").attr("src");
-    const date = $(element).find(".date").text().trim();
+  const articlePromises = $("article")
+    .map(async (i, element) => {
+      let title = $(element).find("h2 a").text().trim();
+      const url = $(element).find("h2 a").attr("href");
+      const image = $(element).find("img").attr("src");
+      const date = $(element).find(".date").text().trim();
 
-    if (title && url && image) {
-      articles.push({
-        title,
-        url,
-        image,
-        source: "planeta-canario",
-        date,
-      });
-    }
-  });
+      if (title && url && image) {
+        title = await translateText(title);
+        articles.push({
+          title,
+          url,
+          image,
+          source: "planeta-canario",
+          date,
+        });
+      }
+    })
+    .get();
 
-  return articles; // Ei rajata, koska rajaus tapahtuu päässä
+  await Promise.all(articlePromises);
+  return articles;
 }
 
 module.exports = async (req, res) => {
@@ -65,25 +86,18 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const { page = 1, limit = 10 } = req.query; // Haetaan page ja limit query-parametreista
+    const { page = 1, limit = 10 } = req.query;
 
-    // Haetaan uutiset molemmista lähteistä
     const newsFromTenerifeNews = await fetchNewsFromTenerifeNews(
-      parseInt(page),
-      parseInt(limit)
+      parseInt(page)
     );
     const newsFromPlanetaCanario = await fetchNewsFromPlanetaCanario(
-      parseInt(page),
-      parseInt(limit)
+      parseInt(page)
     );
 
-    // Yhdistetään uutiset
     const allNews = [...newsFromTenerifeNews, ...newsFromPlanetaCanario];
 
-    // Lasketaan, kuinka monta sivua on yhteensä
     const totalPages = Math.ceil(allNews.length / limit);
-
-    // Sivutetaan uutiset
     const paginatedNews = allNews.slice((page - 1) * limit, page * limit);
 
     res.status(200).json({
