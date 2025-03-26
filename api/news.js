@@ -11,10 +11,19 @@ async function fetchNewsFromCanarianWeekly() {
     $("a[href^='/posts/']").each((i, element) => {
       const title = $(element).text().trim();
       const link = $(element).attr("href");
-      const image = $(element).find("img").attr("src") || "";
-      const date =
-        $(element).closest(".article-item").find(".date").text().trim() ||
-        "Unknown";
+      const image =
+        $(element).find("img").attr("src") ||
+        "https://example.com/default-image.jpg"; // Oletuskuva
+      let date = $(element)
+        .closest(".article-item")
+        .find(".date")
+        .text()
+        .trim();
+
+      // Jos päivämäärä ei löydy, käytä nykyistä päivämäärää
+      if (!date) {
+        date = new Date().toLocaleDateString(); // Nykyinen päivämäärä
+      }
 
       if (title && link) {
         articles.push({
