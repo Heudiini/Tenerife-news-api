@@ -33,42 +33,48 @@ async function fetchNewsFromCanarianWeekly(page = 1, pageSize = 5) {
     const articles = [];
 
     // Käydään läpi artikkelit ja haetaan niille kuvat
-    $("a[href^='/posts/']").each(async (i, element) => {
-      if (i >= pageSize * (page - 1) && i < pageSize * page) {
-        // Apply pagination logic here
-        const title = $(element).text().trim();
-        const link = $(element).attr("href");
-        let image =
-          $(element).find("img").attr("src") ||
-          "https://example.com/default-image.jpg"; // Oletuskuva
-        let date = $(element)
-          .closest(".article-item")
-          .find(".date")
-          .text()
-          .trim();
+    const articlePromises = $("a[href^='/posts/']")
+      .map(async (i, element) => {
+        if (i >= pageSize * (page - 1) && i < pageSize * page) {
+          // Apply pagination logic here
+          const title = $(element).text().trim();
+          const link = $(element).attr("href");
+          let image =
+            $(element).find("img").attr("src") ||
+            "https://example.com/default-image.jpg"; // Oletuskuva
+          let date = $(element)
+            .closest(".article-item")
+            .find(".date")
+            .text()
+            .trim();
 
-        // Jos päivämäärä ei löydy, käytä nykyistä päivämäärää
-        if (!date) {
-          date = new Date().toLocaleDateString(); // Nykyinen päivämäärä
+          // Jos päivämäärä ei löydy, käytä nykyistä päivämäärää
+          if (!date) {
+            date = new Date().toLocaleDateString(); // Nykyinen päivämäärä
+          }
+
+          if (title && link) {
+            // Haetaan kuvan URL suoraan artikkelista
+            const fullImageUrl = await fetchImageFromArticle(
+              `https://www.canarianweekly.com${link}`
+            );
+            return {
+              title,
+              link: `https://www.canarianweekly.com${link}`,
+              image: fullImageUrl, // Käytetään artikkelista haettua kuvaa
+              date,
+              source: "canarian-weekly",
+            };
+          }
         }
+      })
+      .get(); // `.get()` palauttaa taulukon kaikkien lupauksien tuloksista
 
-        if (title && link) {
-          // Haetaan kuvan URL suoraan artikkelista
-          const fullImageUrl = await fetchImageFromArticle(
-            `https://www.canarianweekly.com${link}`
-          );
-          articles.push({
-            title,
-            link: `https://www.canarianweekly.com${link}`,
-            image: fullImageUrl, // Käytetään artikkelista haettua kuvaa
-            date,
-            source: "canarian-weekly",
-          });
-        }
-      }
-    });
+    // Odotetaan, että kaikki artikkelit on haettu
+    const resolvedArticles = await Promise.all(articlePromises);
 
-    return articles;
+    // Suodatetaan pois tyhjät artikkelit (jos sellaisia on)
+    return resolvedArticles.filter((article) => article);
   } catch (error) {
     console.error("Error fetching from Canarian Weekly:", error.message);
     return [];
