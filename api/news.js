@@ -8,17 +8,19 @@ async function fetchNewsFromCanarianWeekly() {
     const $ = cheerio.load(response.data);
     const articles = [];
 
-    $(".most-read .article-item").each((i, element) => {
-      const title = $(element).find("h4 a").text().trim();
-      const link = $(element).find("h4 a").attr("href");
-      const image = $(element).find("img").attr("src");
-      const date = $(element).find(".date").text().trim() || "Unknown";
+    $("a[href^='/posts/']").each((i, element) => {
+      const title = $(element).text().trim();
+      const link = $(element).attr("href");
+      const image = $(element).find("img").attr("src") || "";
+      const date =
+        $(element).closest(".article-item").find(".date").text().trim() ||
+        "Unknown";
 
       if (title && link) {
         articles.push({
           title,
           link: `https://www.canarianweekly.com${link}`,
-          image: image || "",
+          image,
           date,
           source: "canarian-weekly",
         });
