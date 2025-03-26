@@ -1,24 +1,24 @@
 const axios = require("axios");
 const cheerio = require("cheerio");
 
-async function fetchNewsFromCanarianWeekly(page = 1) {
-  const url = `https://www.canarianweekly.com/category/tenerife/page/${page}/`;
+async function fetchNewsFromCanarianWeekly() {
+  const url = "https://www.canarianweekly.com/";
   try {
     const response = await axios.get(url);
     const $ = cheerio.load(response.data);
     const articles = [];
 
-    $(".category-posts .post").each((i, element) => {
-      const title = $(element).find("h3 a").text().trim();
-      const link = $(element).find("h3 a").attr("href");
-      const image = $(element).find("img").attr("src") || "";
-      const date = $(element).find(".entry-date").text().trim() || "Unknown";
+    $(".most-read .article-item").each((i, element) => {
+      const title = $(element).find("h4 a").text().trim();
+      const link = $(element).find("h4 a").attr("href");
+      const image = $(element).find("img").attr("src");
+      const date = $(element).find(".date").text().trim() || "Unknown";
 
       if (title && link) {
         articles.push({
           title,
-          link,
-          image,
+          link: `https://www.canarianweekly.com${link}`,
+          image: image || "",
           date,
           source: "canarian-weekly",
         });
@@ -42,31 +42,10 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-
-    const news = await fetchNewsFromCanarianWeekly(page);
-
-    // Muutetaan päivämäärät Date-objekteiksi
-    const formattedNews = news.map((article) => {
-      const date = new Date(article.date);
-      return {
-        ...article,
-        date: isNaN(date.getTime()) ? new Date() : date,
-      };
-    });
-
-    // Järjestetään uutiset päivämäärän mukaan (uusimmasta vanhimpaan)
-    formattedNews.sort((a, b) => b.date - a.date);
-
-    // Sivutetaan uutiset
-    const totalPages = Math.ceil(formattedNews.length / limit);
-    const paginatedNews = formattedNews.slice((page - 1) * limit, page * limit);
+    const newsFromCanarianWeekly = await fetchNewsFromCanarianWeekly();
 
     res.status(200).json({
-      page,
-      totalPages,
-      news: paginatedNews,
+      news: newsFromCanarianWeekly,
     });
   } catch (error) {
     console.error("Error fetching news articles:", error.message);
