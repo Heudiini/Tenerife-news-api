@@ -1,68 +1,6 @@
 const axios = require("axios");
 const cheerio = require("cheerio");
 
-async function fetchNewsFromTenerifeNews(page = 1) {
-  const url = `https://www.tenerifenews.com/category/news/page/${page}/`; // Muutettu URL
-  try {
-    const response = await axios.get(url);
-    const $ = cheerio.load(response.data);
-    const articles = [];
-
-    $("article").each((i, element) => {
-      const title = $(element).find("h2 a").text().trim();
-      const url = $(element).find("h2 a").attr("href");
-      const image = $(element).find("img").attr("src");
-      const date = $(element).find(".entry-date").text().trim() || "Unknown";
-
-      if (title && url && image) {
-        articles.push({
-          title,
-          url,
-          image,
-          source: "tenerife-news",
-          date,
-        });
-      }
-    });
-
-    return articles;
-  } catch (error) {
-    console.error("Error fetching from Tenerife News:", error.message);
-    return [];
-  }
-}
-
-async function fetchNewsFromPlanetaCanario(page = 1) {
-  const url = `https://planetacanario.com/page/${page}/`;
-  try {
-    const response = await axios.get(url);
-    const $ = cheerio.load(response.data);
-    const articles = [];
-
-    $("article").each((i, element) => {
-      const title = $(element).find("h2 a").text().trim();
-      const url = $(element).find("h2 a").attr("href");
-      const image = $(element).find("img").attr("src");
-      const date = $(element).find("time").attr("datetime") || "Unknown";
-
-      if (title && url && image) {
-        articles.push({
-          title,
-          url,
-          image,
-          source: "planeta-canario",
-          date,
-        });
-      }
-    });
-
-    return articles;
-  } catch (error) {
-    console.error("Error fetching from Planeta Canario:", error.message);
-    return [];
-  }
-}
-
 async function fetchNewsFromCanarianWeekly(page = 1) {
   const url = `https://www.canarianweekly.com/category/tenerife/page/${page}/`;
   try {
@@ -71,17 +9,17 @@ async function fetchNewsFromCanarianWeekly(page = 1) {
     const articles = [];
 
     $(".category-posts .post").each((i, element) => {
-      const title = $(element).find("h3 a").text();
+      const title = $(element).find("h3 a").text().trim();
       const link = $(element).find("h3 a").attr("href");
-      const image = $(element).find("img").attr("src");
-      const date = $(element).find(".entry-date").text();
+      const image = $(element).find("img").attr("src") || "";
+      const date = $(element).find(".entry-date").text().trim() || "Unknown";
 
       if (title && link) {
         articles.push({
           title,
           link,
-          image: image || "",
-          date: date || "",
+          image,
+          date,
           source: "canarian-weekly",
         });
       }
@@ -90,68 +28,6 @@ async function fetchNewsFromCanarianWeekly(page = 1) {
     return articles;
   } catch (error) {
     console.error("Error fetching from Canarian Weekly:", error.message);
-    return [];
-  }
-}
-
-async function fetchNewsFromTenerifeWeekly(page = 1) {
-  const url = `https://tenerifeweekly.com/page/${page}/`;
-  try {
-    const response = await axios.get(url);
-    const $ = cheerio.load(response.data);
-    const articles = [];
-
-    $(".post .post-header").each((i, element) => {
-      const title = $(element).find("h2 a").text();
-      const link = $(element).find("h2 a").attr("href");
-      const image = $(element).find("img").attr("src");
-      const date = $(element).find(".post-meta time").text();
-
-      if (title && link) {
-        articles.push({
-          title,
-          link,
-          image: image || "",
-          date: date || "",
-          source: "tenerife-weekly",
-        });
-      }
-    });
-
-    return articles;
-  } catch (error) {
-    console.error("Error fetching from Tenerife Weekly:", error.message);
-    return [];
-  }
-}
-
-async function fetchNewsFromTenerifeBlog(page = 1) {
-  const url = `https://tenerifeweekly.com/category/blog/page/${page}/`; // Uusi URL
-  try {
-    const response = await axios.get(url);
-    const $ = cheerio.load(response.data);
-    const articles = [];
-
-    $(".post .post-header").each((i, element) => {
-      const title = $(element).find("h2 a").text();
-      const link = $(element).find("h2 a").attr("href");
-      const image = $(element).find("img").attr("src");
-      const date = $(element).find(".post-meta time").text();
-
-      if (title && link) {
-        articles.push({
-          title,
-          link,
-          image: image || "",
-          date: date || "",
-          source: "tenerife-blog",
-        });
-      }
-    });
-
-    return articles;
-  } catch (error) {
-    console.error("Error fetching from Tenerife Blog:", error.message);
     return [];
   }
 }
@@ -169,44 +45,23 @@ module.exports = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
 
-    // Haetaan uutiset kaikista lähteistä
-    const [
-      newsFromTenerifeNews,
-      newsFromPlanetaCanario,
-      newsFromCanarianWeekly,
-      newsFromTenerifeWeekly,
-      newsFromTenerifeBlog, // Uusi lähde
-    ] = await Promise.all([
-      fetchNewsFromTenerifeNews(page),
-      fetchNewsFromPlanetaCanario(page),
-      fetchNewsFromCanarianWeekly(page),
-      fetchNewsFromTenerifeWeekly(page),
-      fetchNewsFromTenerifeBlog(page), // Uusi lähde lisätty
-    ]);
+    const news = await fetchNewsFromCanarianWeekly(page);
 
-    let allNews = [
-      ...newsFromTenerifeNews,
-      ...newsFromPlanetaCanario,
-      ...newsFromCanarianWeekly,
-      ...newsFromTenerifeWeekly,
-      ...newsFromTenerifeBlog, // Lisätään uusi lähde
-    ];
-
-    // Muutetaan päivämäärät Date-objekteiksi vertailun helpottamiseksi
-    allNews = allNews.map((article) => {
+    // Muutetaan päivämäärät Date-objekteiksi
+    const formattedNews = news.map((article) => {
       const date = new Date(article.date);
       return {
         ...article,
-        date: isNaN(date.getTime()) ? new Date() : date, // Jos päivämäärä on virheellinen, käytetään nykyistä päivämäärää
+        date: isNaN(date.getTime()) ? new Date() : date,
       };
     });
 
-    // Järjestetään uutiset päivämäärän mukaan (tuoreimmasta vanhimpaan)
-    allNews.sort((a, b) => b.date - a.date);
+    // Järjestetään uutiset päivämäärän mukaan (uusimmasta vanhimpaan)
+    formattedNews.sort((a, b) => b.date - a.date);
 
     // Sivutetaan uutiset
-    const totalPages = Math.ceil(allNews.length / limit);
-    const paginatedNews = allNews.slice((page - 1) * limit, page * limit);
+    const totalPages = Math.ceil(formattedNews.length / limit);
+    const paginatedNews = formattedNews.slice((page - 1) * limit, page * limit);
 
     res.status(200).json({
       page,
