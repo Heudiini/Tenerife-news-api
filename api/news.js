@@ -1,6 +1,30 @@
 const axios = require("axios");
 const cheerio = require("cheerio");
 
+async function fetchImageFromArticle(link) {
+  try {
+    const response = await axios.get(link); // Hae artikkeli
+    const $ = cheerio.load(response.data); // Lataa HTML
+    const imageUrl = $("img").first().attr("src"); // Oletetaan, että ensimmäinen <img> tagi on se, mitä etsit
+
+    // Jos kuva löytyy, palauta sen URL
+    if (imageUrl) {
+      // Tarkista, onko kuva suhteellinen ja lisää täysi URL tarvittaessa
+      if (!imageUrl.startsWith("http")) {
+        const baseUrl = new URL(link); // Perustaa URL:n linkistä
+        return baseUrl.origin + imageUrl; // Palauta täysi URL
+      }
+      return imageUrl; // Palauta suoraan
+    } else {
+      // Jos kuvaa ei löydy, palauta oletuskuva
+      return "https://example.com/default-image.jpg";
+    }
+  } catch (error) {
+    console.error("Virhe haettaessa kuvaa:", error);
+    return "https://example.com/default-image.jpg"; // Palauta oletuskuva virheen sattuessa
+  }
+}
+
 async function fetchNewsFromCanarianWeekly(page = 1, pageSize = 5) {
   const url = "https://www.canarianweekly.com/";
   try {
@@ -8,12 +32,13 @@ async function fetchNewsFromCanarianWeekly(page = 1, pageSize = 5) {
     const $ = cheerio.load(response.data);
     const articles = [];
 
-    $("a[href^='/posts/']").each((i, element) => {
+    // Käydään läpi artikkelit ja haetaan niille kuvat
+    $("a[href^='/posts/']").each(async (i, element) => {
       if (i >= pageSize * (page - 1) && i < pageSize * page) {
         // Apply pagination logic here
         const title = $(element).text().trim();
         const link = $(element).attr("href");
-        const image =
+        let image =
           $(element).find("img").attr("src") ||
           "https://example.com/default-image.jpg"; // Oletuskuva
         let date = $(element)
@@ -28,10 +53,14 @@ async function fetchNewsFromCanarianWeekly(page = 1, pageSize = 5) {
         }
 
         if (title && link) {
+          // Haetaan kuvan URL suoraan artikkelista
+          const fullImageUrl = await fetchImageFromArticle(
+            `https://www.canarianweekly.com${link}`
+          );
           articles.push({
             title,
             link: `https://www.canarianweekly.com${link}`,
-            image,
+            image: fullImageUrl, // Käytetään artikkelista haettua kuvaa
             date,
             source: "canarian-weekly",
           });
