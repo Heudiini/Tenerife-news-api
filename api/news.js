@@ -39,9 +39,6 @@ async function fetchNewsFromCanarianWeekly(page = 1, pageSize = 5) {
           // Apply pagination logic here
           const title = $(element).text().trim();
           const link = $(element).attr("href");
-          let image =
-            $(element).find("img").attr("src") ||
-            "https://example.com/default-image.jpg"; // Oletuskuva
           let date = $(element)
             .closest(".article-item")
             .find(".date")
