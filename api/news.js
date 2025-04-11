@@ -77,6 +77,7 @@ async function fetchNewsFromCanarianWeekly(page = 1, pageSize = 5) {
   }
 }
 
+// Tämä on Vercelin API, joka käsittelee frontendistä tulevat pyynnöt ja vastaa artikkelien tiedoilla ja kuvilla.
 module.exports = async (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
@@ -95,6 +96,7 @@ module.exports = async (req, res) => {
       pageSize
     );
 
+    // Palautetaan artikkelit JSON-muodossa
     res.status(200).json({
       news: newsFromCanarianWeekly,
     });
