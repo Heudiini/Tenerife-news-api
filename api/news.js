@@ -5,23 +5,22 @@ async function fetchImageFromArticle(link) {
   try {
     const response = await axios.get(link); // Hae artikkeli
     const $ = cheerio.load(response.data); // Lataa HTML
-    const imageUrl = $("img").first().attr("src"); // Oletetaan, että ensimmäinen <img> tagi on se, mitä etsit
+    const imageUrl = $("img").first().attr("src"); // Hae ensimmäinen kuva-artikkeli
 
-    // Jos kuva löytyy, palauta sen URL
+    // Jos kuva löytyy
     if (imageUrl) {
-      // Tarkista, onko kuva suhteellinen ja lisää täysi URL tarvittaessa
+      // Tarkista, onko se täydellinen URL
       if (!imageUrl.startsWith("http")) {
-        const baseUrl = new URL(link); // Perustaa URL:n linkistä
-        return baseUrl.origin + imageUrl; // Palauta täysi URL
+        const baseUrl = new URL(link); // Luo base URL
+        return baseUrl.origin + imageUrl; // Liitä se täydelliseksi URL:ksi
       }
-      return imageUrl; // Palauta suoraan
+      return imageUrl; // Palauta suora kuva-URL
     } else {
-      // Jos kuvaa ei löydy, palauta oletuskuva
-      return "https://example.com/default-image.jpg";
+      return "https://picsum.photos/100"; // Oletuskuva, jos ei löydy kuvaa
     }
   } catch (error) {
-    console.error("Virhe haettaessa kuvaa:", error);
-    return "https://example.com/default-image.jpg"; // Palauta oletuskuva virheen sattuessa
+    console.error("Virhe kuvan haussa:", error);
+    return "https://picsum.photos/100"; // Oletuskuva virheen sattuessa
   }
 }
 
