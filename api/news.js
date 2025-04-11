@@ -79,10 +79,12 @@ async function fetchNewsFromCanarianWeekly(page = 1, pageSize = 5) {
 
 // Tämä on Vercelin API, joka käsittelee frontendistä tulevat pyynnöt ja vastaa artikkelien tiedoilla ja kuvilla.
 module.exports = async (req, res) => {
+  // CORS-otsikot
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
+  // CORS OPTIONS pyyntöjen käsittely
   if (req.method === "OPTIONS") {
     return res.status(200).end();
   }
@@ -91,6 +93,7 @@ module.exports = async (req, res) => {
   const pageSize = parseInt(req.query.pageSize) || 5; // Default to 5 articles per page
 
   try {
+    // Haetaan artikkelit Canarian Weekly -sivustolta
     const newsFromCanarianWeekly = await fetchNewsFromCanarianWeekly(
       page,
       pageSize
