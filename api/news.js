@@ -70,10 +70,22 @@ async function fetchNewsFromCanarianWeekly(page = 1, pageSize = 5) {
     const resolvedArticles = await Promise.all(articlePromises);
 
     // Suodatetaan pois tyhjät artikkelit (jos sellaisia on)
-    return resolvedArticles.filter((article) => article);
+    const filteredArticles = resolvedArticles.filter((article) => article);
+
+    // Lasketaan yhteinen määrä artikkeleita
+    const totalArticles = $("a[href^='/posts/']").length;
+
+    // Lasketaan, kuinka monta sivua on
+    const totalPages = Math.ceil(totalArticles / pageSize);
+
+    return {
+      articles: filteredArticles,
+      totalArticles,
+      totalPages,
+    };
   } catch (error) {
     console.error("Error fetching from Canarian Weekly:", error.message);
-    return [];
+    return { articles: [], totalArticles: 0, totalPages: 0 };
   }
 }
 
@@ -94,14 +106,14 @@ module.exports = async (req, res) => {
 
   try {
     // Haetaan artikkelit Canarian Weekly -sivustolta
-    const newsFromCanarianWeekly = await fetchNewsFromCanarianWeekly(
-      page,
-      pageSize
-    );
+    const { articles, totalArticles, totalPages } =
+      await fetchNewsFromCanarianWeekly(page, pageSize);
 
-    // Palautetaan artikkelit JSON-muodossa
+    // Palautetaan artikkelit JSON-muodossa, sisältäen myös totalArticles ja totalPages
     res.status(200).json({
-      news: newsFromCanarianWeekly,
+      news: articles,
+      totalArticles,
+      totalPages,
     });
   } catch (error) {
     console.error("Error fetching news articles:", error.message);
