@@ -9,27 +9,23 @@ async function fetchNewsFromCanarianWeekly(page = 1, pageSize = 5) {
     });
 
     const $ = cheerio.load(response.data);
-    const articles = [];
+    const allArticles = [];
 
     $("a[href^='/posts/']").each((i, el) => {
       const title = $(el).text().trim();
       const link = $(el).attr("href");
 
-      // Rajaa vain ne artikkelit, joissa on "tenerife" URLissa tai otsikossa (case-insensitive)
+      // Suodatetaan vain Teneriffaan liittyvät artikkelit
       if (
-        !link.toLowerCase().includes("tenerife") &&
-        !title.toLowerCase().includes("tenerife")
+        link.toLowerCase().includes("tenerife") ||
+        title.toLowerCase().includes("tenerife")
       ) {
-        return; // skipataan muut
-      }
-
-      if (i >= pageSize * (page - 1) && i < pageSize * page) {
         let date =
           $(el).closest(".article-item").find(".date").text().trim() ||
           new Date().toLocaleDateString();
 
         if (title && link) {
-          articles.push({
+          allArticles.push({
             title,
             link: `https://www.canarianweekly.com${link}`,
             date,
@@ -40,10 +36,15 @@ async function fetchNewsFromCanarianWeekly(page = 1, pageSize = 5) {
       }
     });
 
-    const totalArticles = $("a[href^='/posts/']").length;
-    const totalPages = Math.ceil(totalArticles / pageSize);
+    // Sivutus
+    const start = pageSize * (page - 1);
+    const pagedArticles = allArticles.slice(start, start + pageSize);
 
-    return { articles, totalArticles, totalPages };
+    return {
+      articles: pagedArticles,
+      totalArticles: allArticles.length,
+      totalPages: Math.ceil(allArticles.length / pageSize),
+    };
   } catch (error) {
     console.error("Error fetching from Canarian Weekly:", error.message);
     return { articles: [], totalArticles: 0, totalPages: 0 };
@@ -51,7 +52,7 @@ async function fetchNewsFromCanarianWeekly(page = 1, pageSize = 5) {
 }
 
 module.exports = async (req, res) => {
-  // CORS
+  // CORS headers
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
