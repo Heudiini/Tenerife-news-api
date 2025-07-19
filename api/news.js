@@ -7,19 +7,27 @@ async function fetchNewsFromCanarianWeekly(page = 1, pageSize = 5) {
     const response = await axios.get(url, {
       headers: { "User-Agent": "Mozilla/5.0" },
     });
+
     const $ = cheerio.load(response.data);
     const articles = [];
 
     $("a[href^='/posts/']").each((i, el) => {
+      const title = $(el).text().trim();
+      const link = $(el).attr("href");
+
+      // Rajaa vain ne artikkelit, joissa on "tenerife" URLissa tai otsikossa (case-insensitive)
+      if (
+        !link.toLowerCase().includes("tenerife") &&
+        !title.toLowerCase().includes("tenerife")
+      ) {
+        return; // skipataan muut
+      }
+
       if (i >= pageSize * (page - 1) && i < pageSize * page) {
-        const title = $(el).text().trim();
-        const link = $(el).attr("href");
-        const dateText = $(el)
-          .closest(".article-item")
-          .find(".date")
-          .text()
-          .trim();
-        const date = dateText || new Date().toLocaleDateString();
+        let date =
+          $(el).closest(".article-item").find(".date").text().trim() ||
+          new Date().toLocaleDateString();
+
         if (title && link) {
           articles.push({
             title,
@@ -43,6 +51,7 @@ async function fetchNewsFromCanarianWeekly(page = 1, pageSize = 5) {
 }
 
 module.exports = async (req, res) => {
+  // CORS
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
