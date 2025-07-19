@@ -29,7 +29,7 @@ async function fetchNewsFromCanarianWeekly(page = 1, pageSize = 5) {
             title,
             link: `https://www.canarianweekly.com${link}`,
             date,
-            image: "https://picsum.photos/200",
+            image: "https://www.canarianweekly.com/assets/images/logo.png",
             source: "canarian-weekly",
           });
         }
