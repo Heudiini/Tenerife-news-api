@@ -15,7 +15,6 @@ async function fetchNewsFromCanarianWeekly(page = 1, pageSize = 5) {
       const title = $(el).text().trim();
       const link = $(el).attr("href");
 
-      // Suodatetaan vain Teneriffaan liittyvät artikkelit
       if (
         link.toLowerCase().includes("tenerife") ||
         title.toLowerCase().includes("tenerife")
