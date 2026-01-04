@@ -1,2 +1,1 @@
-served in URL: 
-https://heidisblog.up.railway.app/api/posts  
+served in URL: https://tenerife-news.vercel.app/api/news 
